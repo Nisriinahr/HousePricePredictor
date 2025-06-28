@@ -98,30 +98,10 @@ plt.ylabel('Predicted Price')
 plt.title('Actual vs Predicted House Prices')
 plt.show()
 
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-
-num_cols = ['MS SubClass', 'Lot Area', 'Overall Qual', 'Overall Cond', 
-            'Year Built', 'Year Remod/Add', 'TotRms AbvGrd', 
-            'Fireplaces', 'Garage Area', 'Yr Sold']
-
-cat_cols = ['Street', 'Lot Config', 'House Style', 'Bldg Type', 
-            'Foundation', 'Sale Type', 'Sale Condition']
-
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', StandardScaler(), num_cols),
-        ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols)
-    ]
-)
-
-pipeline = Pipeline(steps=[
-    ('preprocessor', preprocessor),
-    ('regressor', LinearRegression())
-])
-
-pipeline.fit(X, y)
-
-joblib.dump(pipeline, 'model_pipeline.pkl')
-print("✅ Model pipeline berhasil disimpan sebagai 'model_pipeline.pkl'")
-
+import joblib
+model_path = r"C:\Users\nisriina hilmi\Downloads\linear_regression_model.pkl"
+try:
+    joblib.dump(model, model_path)
+    print(f"\nModel saved successfully at: {model_path}")
+except PermissionError:
+    print("\nError: Could not save model. Check directory permissions.")

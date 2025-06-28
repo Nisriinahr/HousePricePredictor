@@ -1,52 +1,74 @@
 import streamlit as st
-import pickle
+import joblib
 import numpy as np
+import pandas as pd
 
-# Load model
-model = pickle.load(open('linear_regression_model.pkl', 'rb'))
+# Load model yang sudah disimpan (joblib)
+model = joblib.load('linear_regression_model.pkl')
 
-# Judul
-st.title('🏠 Prediksi Harga Rumah (Model Linear Regression)')
+st.set_page_config(page_title="Prediksi Harga Rumah", layout="centered")
+st.title("🏡 Prediksi Harga Rumah dengan Linear Regression")
 
-# Form input user
+st.markdown("Silakan masukkan informasi rumah:")
+
+# Form input pengguna
 col1, col2 = st.columns(2)
 
 with col1:
-    MS_SubClass = st.number_input('MS SubClass', value=20)
-    Lot_Area = st.number_input('Lot Area', value=8000)
-    Overall_Qual = st.number_input('Overall Quality (1-10)', value=5)
-    Overall_Cond = st.number_input('Overall Condition (1-10)', value=5)
-    Year_Built = st.number_input('Year Built', value=2000)
-    TotRms_AbvGrd = st.number_input('Total Rooms Above Ground', value=6)
-    Fireplaces = st.number_input('Fireplaces', value=1)
-    Garage_Area = st.number_input('Garage Area', value=400)
+    ms_subclass = st.number_input("MS SubClass", min_value=0, value=20)
+    lot_area = st.number_input("Lot Area", min_value=0, value=8000)
+    overall_qual = st.slider("Overall Quality (1-10)", 1, 10, 5)
+    overall_cond = st.slider("Overall Condition (1-10)", 1, 10, 5)
+    year_built = st.number_input("Year Built", min_value=1800, value=2000)
+    year_remod = st.number_input("Year Remod/Add", min_value=1800, value=2005)
+    tot_rms = st.number_input("Total Rooms Above Ground", min_value=0, value=6)
+    fireplaces = st.number_input("Fireplaces", min_value=0, value=1)
+    garage_area = st.number_input("Garage Area", min_value=0, value=400)
+    yr_sold = st.number_input("Year Sold", min_value=2006, max_value=2010, value=2010)
 
 with col2:
-    Yr_Sold = st.number_input('Year Sold', value=2010)
-    Year_Remod_Add = st.number_input('Year Remod/Add', value=2005)
-    Street_Pave = st.selectbox('Street Type', ['Pave', 'Grvl']) == 'Pave'
-    Lot_Config_Corner = st.selectbox('Lot Config (Corner?)', ['Yes', 'No']) == 'Yes'
-    House_Style_1Story = st.selectbox('House Style (1 Story?)', ['Yes', 'No']) == 'Yes'
-    Bldg_Type_1Fam = st.selectbox('Building Type (1 Family?)', ['Yes', 'No']) == 'Yes'
-    Foundation_PConc = st.selectbox('Foundation Type (PConc?)', ['Yes', 'No']) == 'Yes'
-    Sale_Type_WD = st.selectbox('Sale Type (WD?)', ['Yes', 'No']) == 'Yes'
-    Sale_Condition_Normal = st.selectbox('Sale Condition (Normal?)', ['Yes', 'No']) == 'Yes'
+    street = st.selectbox("Street", ["Pave", "Grvl"])
+    lot_config = st.selectbox("Lot Config", ['Inside', 'Corner', 'CulDSac', 'FR2', 'FR3'])
+    house_style = st.selectbox("House Style", ['1Story', '2Story', '1.5Fin', '1.5Unf', 'SFoyer', 'SLvl'])
+    bldg_type = st.selectbox("Building Type", ['1Fam', '2fmCon', 'Duplex', 'Twnhs', 'TwnhsE'])
+    foundation = st.selectbox("Foundation", ['PConc', 'CBlock', 'BrkTil', 'Wood', 'Slab', 'Stone'])
+    sale_type = st.selectbox("Sale Type", ['WD', 'New', 'COD', 'ConLD', 'ConLI', 'CWD', 'Oth', 'Con'])
+    sale_condition = st.selectbox("Sale Condition", ['Normal', 'Abnorml', 'Partial', 'AdjLand', 'Alloca', 'Family'])
 
 # Tombol prediksi
-if st.button('🔍 Prediksi Harga'):
-    # Format sesuai urutan fitur setelah one-hot encoding
-    input_data = np.array([[
-        MS_SubClass, Lot_Area, Overall_Qual, Overall_Cond, Year_Built,
-        Year_Remod_Add, TotRms_AbvGrd, Fireplaces, Garage_Area, Yr_Sold,
-        int(Street_Pave),
-        int(Lot_Config_Corner),
-        int(House_Style_1Story),
-        int(Bldg_Type_1Fam),
-        int(Foundation_PConc),
-        int(Sale_Type_WD),
-        int(Sale_Condition_Normal)
-    ]])
+if st.button("🔍 Prediksi Harga"):
+    # Buat DataFrame input manual (harus sama struktur dummynya seperti saat training)
+    input_dict = {
+        'MS SubClass': [ms_subclass],
+        'Lot Area': [lot_area],
+        'Overall Qual': [overall_qual],
+        'Overall Cond': [overall_cond],
+        'Year Built': [year_built],
+        'Year Remod/Add': [year_remod],
+        'TotRms AbvGrd': [tot_rms],
+        'Fireplaces': [fireplaces],
+        'Garage Area': [garage_area],
+        'Yr Sold': [yr_sold],
+        'Street_' + street: [1],
+        'Lot Config_' + lot_config: [1],
+        'House Style_' + house_style: [1],
+        'Bldg Type_' + bldg_type: [1],
+        'Foundation_' + foundation: [1],
+        'Sale Type_' + sale_type: [1],
+        'Sale Condition_' + sale_condition: [1]
+    }
 
-    # Prediksi harga
-    prediction = model.predict(input_data)[0]
-    st.success(f'💰 Estimasi Harga Rumah: ${prediction:,.2f}')
+    # Inisialisasi semua fitur dummy = 0 dulu
+    dummy_columns = model.feature_names_in_ if hasattr(model, 'feature_names_in_') else model.coef_.shape[0]
+    all_columns = model.feature_names_in_
+    input_data = pd.DataFrame(columns=all_columns)
+    input_data.loc[0] = 0  # set semua ke 0
+
+    # Update nilai input yang ada
+    for key, val in input_dict.items():
+        if key in input_data.columns:
+            input_data.at[0, key] = val[0]
+
+    # Prediksi
+    pred = model.predict(input_data)[0]
+    st.success(f"💰 Estimasi Harga Rumah: **${pred:,.2f}**")

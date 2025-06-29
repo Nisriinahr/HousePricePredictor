@@ -3,7 +3,6 @@ import joblib
 import numpy as np
 import pandas as pd
 
-# Load model yang sudah disimpan (joblib)
 model = joblib.load('linear_regression_model.pkl')
 
 st.set_page_config(page_title="Prediksi Harga Rumah", layout="centered")
@@ -11,7 +10,6 @@ st.title("🏡 Prediksi Harga Rumah dengan Linear Regression")
 
 st.markdown("Silakan masukkan informasi rumah:")
 
-# Form input pengguna
 col1, col2 = st.columns(2)
 
 with col1:
@@ -35,9 +33,7 @@ with col2:
     sale_type = st.selectbox("Sale Type", ['WD', 'New', 'COD', 'ConLD', 'ConLI', 'CWD', 'Oth', 'Con'])
     sale_condition = st.selectbox("Sale Condition", ['Normal', 'Abnorml', 'Partial', 'AdjLand', 'Alloca', 'Family'])
 
-# Tombol prediksi
 if st.button("🔍 Prediksi Harga"):
-    # Buat DataFrame input manual (harus sama struktur dummynya seperti saat training)
     input_dict = {
         'MS SubClass': [ms_subclass],
         'Lot Area': [lot_area],
@@ -58,13 +54,11 @@ if st.button("🔍 Prediksi Harga"):
         'Sale Condition_' + sale_condition: [1]
     }
 
-    # Inisialisasi semua fitur dummy = 0 dulu
     dummy_columns = model.feature_names_in_ if hasattr(model, 'feature_names_in_') else model.coef_.shape[0]
     all_columns = model.feature_names_in_
     input_data = pd.DataFrame(columns=all_columns)
     input_data.loc[0] = 0  # set semua ke 0
 
-    # Update nilai input yang ada
     for key, val in input_dict.items():
         if key in input_data.columns:
             input_data.at[0, key] = val[0]
